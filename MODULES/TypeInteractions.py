@@ -406,6 +406,45 @@ poketypes = ['Fairy']
 
 
 
+def DualsTypeInteraction(ArrayInteracoes1,ArrayInteracoes2):
+    
+    Weaknes1 = ArrayInteracoes1[0]
+    Weaknes2 = ArrayInteracoes2[0]
+     
+    Imunidades1 = ArrayInteracoes1[1]
+    Imunidades2 = ArrayInteracoes2[1]
+
+    Resistences1 = ArrayInteracoes1[2]
+    Resistences2 = ArrayInteracoes2[2]
+
+    FinalInteractionsWeakness = []
+    FinalInteractionsImunidades = []
+    FinalInteractionsResistences = []
+
+    for i in Imunidades1:
+     
+        J = i.split(" ")[0]
+        for K in Imunidades2:
+            if(J == K.split(" ")[0]):
+                FinalInteractionsImunidades.append(K.split(" ")[0])
+   
+    for i in Weaknes1:
+     
+        J = i.split(" ")[0]
+        for K in Weaknes2:
+            if(J == K.split(" ")[0]):
+                FinalInteractionsWeakness.append(K.split(" ")[0])
+   
+
+    for i in Resistences1:
+     
+        J = i.split(" ")[0]
+        for K in Resistences2:
+            if(J == K.split(" ")[0]):
+                FinalInteractionsResistences.append(K.split(" ")[0])
+    return (FinalInteractionsWeakness,FinalInteractionsImunidades,FinalInteractionsResistences)
+
+    
 def StrenghtAndWeakness(Type1,Type2): 
 
 
@@ -515,4 +554,4 @@ def StrenghtAndWeakness(Type1,Type2):
         return (Weakness,Imunidades,Resistences)
 
 
-print(StrenghtAndWeakness("Normal","Flying"))
+print(DualsTypeInteraction(StrenghtAndWeakness("Electric",None),StrenghtAndWeakness("Grass",None)))
