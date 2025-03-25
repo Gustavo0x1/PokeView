@@ -9,18 +9,43 @@ import re
 import sys
 import os
 from MODULES import TypeInteractions
-#                 ESSENCIAIS   ESSENCIAIS  ESSENCIAIS  ESSENCIAIS  ESSENCIAIS  ESSENCIAIS  ESSENCIAIS  ESSENCIAIS  ESSENCIAIS
 from typing import List, Dict, Union, Optional, Literal
 global RowCount
 
+'''
+Código de Gustavo Soares Rodrigues
+IMPORTANTE
+
+O código possui grande parte de sua estrutura comentada para caso de dúvidas.
+Sugestões e problemas podem ser enviados pelo email: gustavosrd4@gmail.com
+
+O uso da API, que é feito pelo código é externo ao meu controle, e é algo que depende da demanda e do tempo de resposta dos servidores, por isso é comum demorar alguns segundos
+até que a resposta seja obtida, basta aguardar.
+
+Um video de utilização Tour.mkv, pode ser encontrado neste arquvio, e visa sanar dúvidas, ou permitir a visualização do projeto em caso de problemas de execução.
+
+
+
+'''
 
 class PokemonCACHE:
+    '''
+    Classe voltada para gerenciar o armazenamento de nomes e informações de pokemons já pesquisados até um limite estipulado, evitando uso desnecessário da API
+
+    '''
     def __init__(self, limit: int = 50):
+        '''
+        Incialização definida com 50 itens em cache, valor arbitrário, valores muito grandes (maiores que 1000) podem causar consumo exagerado de memória pelo programa. 
+        '''
         self.limit = limit
         self.data: Dict[str, List[Dict]] = {}
     def GetSize(self):
         return len(self.data)
     def add_json(self, json_obj: Dict, data_type: Literal["DoRequest",  "AlternativeForms"]):
+        '''
+        Função que adiciona os dados do pokemon ao cache.
+
+        '''
         if data_type not in self.data:
             self.data[data_type] = []
 
@@ -32,9 +57,10 @@ class PokemonCACHE:
             self.data[data_type][index] = json_obj
 
     def search_json(self, name: str, data_type: Literal["DoRequest",  "AlternativeForms"]) -> Optional[Dict]:
-        """
-        Busca um JSON pelo nome dentro do tipo especificado.
-        """
+        '''
+        Função que busca se o nome do pokemon pesquisado ja está na lista (em cache), e caso esteja provem as informações de maneira independente, sem uso de API
+
+        '''
         if self.GetSize()==0:
             return None
         if data_type not in self.data:
@@ -44,11 +70,8 @@ class PokemonCACHE:
             for item in self.data[data_type]:
                 
                 if item.get("forms", {})[0].get("name",{}) == name:
-                    
+                
                     return item
-
-
-
         if data_type == "AlternativeForms":
             for item in self.data[data_type]:
                
@@ -59,13 +82,18 @@ class PokemonCACHE:
 
     def get_data(self, data_type: Literal["DoRequest",  "AlternativeForms"]) -> List[Dict]:
         """
-        Retorna todos os dados armazenados para o tipo especificado.
+        Função de teste, apenas permitindo a visualização dos itens armazenados em cache.
         """
         return self.data.get(data_type, [])
 global GlobalCACHE
 GlobalCACHE = PokemonCACHE()
 
 def center_SideWindow(root,targetToSide):
+
+    '''
+    Posiciona a sidewindow ao lado da janela principal do progrma.
+    SideWindow é referente à pequena janela que exibe informações como stats dos pokemons.
+    '''
     root.update_idletasks()
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
@@ -81,24 +109,26 @@ def center_SideWindow(root,targetToSide):
     # Definir a geometria da janela
     root.geometry(f'{350}x{155}+{x_pos-150}+{y_pos}')
 def center_window(root):
-    # Atualizar as dimensões da janela após a criação
-    root.update_idletasks()
+   
+    '''
+    Centralização da janela, o programa foi feito para ser utilizado de maneira centralizada, e no canto direito da tela
 
-    # Obter as dimensões da tela
+    '''
+    root.update_idletasks()
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
-
-    # Obter as dimensões da janela
     window_width = root.winfo_width()
     window_height = root.winfo_height()
+    x_pos = screen_width - window_width 
+    y_pos = (screen_height - window_height) // 2 
 
-    # Calcular a posição
-    x_pos = screen_width - window_width  # Coloca a janela à direita
-    y_pos = (screen_height - window_height) // 2  # Coloca a janela no meio verticalmente
-
-    # Definir a geometria da janela
     root.geometry(f'{window_width}x{window_height}+{x_pos}+{y_pos}')
 class BarraDeComandos():
+    
+    '''
+    A barra de comandos é um componente visual da janela TKINTER, é onde ocorre o redirecionamento do usuário para as diversas funções
+    e também é onde são criadas as ABAS, que permitem analisar multiplos pokemons
+    '''
     def __init__(self, janela):
         global RowCount 
         
@@ -141,26 +171,24 @@ class BarraDeComandos():
         self.SideBars = {}
         self.frames = {}
 
-        # Vincular eventos para ajustar o canvas
         self.barra_abas.bind("<Configure>", self._ajustar_canvas)
 
     def _ajustar_canvas(self, event=None):
-        """Ajusta a região de rolagem do canvas ao conteúdo."""
+       
         self.canvas_abas.configure(scrollregion=self.canvas_abas.bbox("all"))
 
     def _scroll_canvas(self, *args):
-        """Controla a rolagem horizontal com limites."""
+ 
         try:
-            scroll_amount = float(args[1])  # Captura a quantidade de rolagem como um número decimal
+            scroll_amount = float(args[1]) 
         except ValueError:
-            return  # Ignora rolagens inválidas
+            return  
         
-        if scroll_amount < 0 and self.canvas_abas.xview()[0] <= 0:  # Checa o limite esquerdo
+        if scroll_amount < 0 and self.canvas_abas.xview()[0] <= 0: 
             return
-        elif scroll_amount > 0 and self.canvas_abas.xview()[1] >= 1:  # Checa o limite direito
+        elif scroll_amount > 0 and self.canvas_abas.xview()[1] >= 1:  
             return
         
-        # Realiza o deslocamento, convertendo o scroll_amount para um número inteiro
         self.canvas_abas.xview_scroll(int(scroll_amount), "units")
 
     def CreateSinglesSideBar(self):
@@ -171,7 +199,7 @@ class BarraDeComandos():
     
         center_SideWindow(self.SideBar,self.SideBar)
         self.SideBar.overrideredirect(True)
-        self.SideBar.attributes("-topmost", True)  # Sempre acima
+        self.SideBar.attributes("-topmost", True)  
         self.SideBar.config(bg="#2e2e2e")
         self.SideBars[RowCount] = self.SideBar
         return self.SideBar
@@ -254,27 +282,37 @@ class BarraDeComandos():
             aba_frame.destroy()        # Remove o botão da aba
             del self.abas[nome_aba]
 class PokeJsonHandle():
+    '''
+    É uma classe sub-utilizada, que permite obter de maneira direta os tipos de um pokemon atraves do JSON contendo todas as suas informações, vindo direto da API.
+
+    A classe possui apenas uma função, mas existe para possibilitar algumas melhorias futuras no código. 
+    (Exibir o tipo do pokemon pesquisado por exemplo, o código não faz isso atualmente para economizar espaço de tela)
+    '''
     def GetPokeType(self,json):
         tipos = [t['type']['name'] for t in json['types']]
         
         return tipos
 
 class PokemonTypeWidget(tk.Frame):
-    
+    '''
+    Esta classe é responsável pela criação do componente visual das relações de dano de cada tipo do pokemon(forças, fraquezas, imunidades)
+
+    Ela recebe um array com os icones respectivos, e um array com o valor da relação (0.5x,2x)
+
+    A separação em duas variaveis se dá por gerar uma maior facilidade no tratamento dos dados em funções futuras.
+    '''
     def __init__(self, parent, icons_with_text,damageMultiplierText,IconSize=50, *args, **kwargs):
      
         super().__init__(parent, *args, **kwargs)
         self.configure(bg="#2E2E2E")
-        # Verifica se há até 10 elementos
+        #Limite de elementos ( o pokemon com mais interações possui menos do que 15)
         if len(icons_with_text) > 15:
             raise ValueError("O widget suporta no máximo 10 ícones com texto.")
 
-        self.images = []  # Lista para armazenar referências às imagens
-
+        self.images = []  
 
         for index, (icon_path, text) in enumerate(icons_with_text):
-            # Carrega a imagem do ícone
-            
+
             try:
                 img = Image.open(icon_path)
                 width, height = img.size
@@ -304,16 +342,27 @@ class PokemonTypeWidget(tk.Frame):
         self.grid_columnconfigure(0, weight=1)  # Expande a coluna se necessário
 class PokeInfoRequests():
     def __init__(self,pokename):
+        '''
+        Definição dos endereços de cada API.
+        a pokeapi não possui os dados completos de todos os pokemons ao se pesquisar pelo NOME, e também possui outras deficiencias, por isso é utilizado a API do pokemon
+        TCG, quando não é encontrado em uma, ele busca na outra.
+        
+        '''
+        
         self.pokename = pokename
         self.UrlPoke = "https://pokeapi.co/api/v2/pokemon/"
         self.UrlTCG = "https://api.pokemontcg.io/v2/cards?q=name:"
         self.SpeciesURL = "https://pokeapi.co/api/v2/pokemon-species/"
         
     def DoRequest(self):
+        '''
+        Faz uma busca simples, com o nome do pokemon obtido no construtor, ela obtem o JSON com os dados.
+        '''
         try:
             CheckIfOnCache =  GlobalCACHE.search_json(self.pokename,"DoRequest")
             
             if( CheckIfOnCache != None):
+
                 print("DO REQUEST:: RETORNANDO VALOR EM CACHE!!!!")
                 return CheckIfOnCache
             
@@ -329,13 +378,24 @@ class PokeInfoRequests():
             return self.DoPokeNumberRequest(self.DoRequestViaTCG())
         
     def CapitalizeFirstLetter(self,A):
-        if(A != None):
+        '''
+        Não existe um consenso global nas API's sobre a escrita do nome dos pokemons ou tipos, ou seja, alguns utilizam todas as letras minusculas, enquanto outros
+        utilizam apenas a primeira letra maiuscula.
+
+       
+        '''
+        if(A != None):#          Desnecessariamente complexo?Deve haver alguma função que faça isso em python
+
             Capitalized = ""
             Capitalized += A[0].upper()
             Capitalized += A[1:]
             return Capitalized
         return A
     def DoPokeNumberRequest(self,pokedexNumber):
+        '''
+        Faz a pesquisa pelo pokemon atraves do POKEDEX NUMBER, é realizada quando o pokemon não foi encontrado ao busca-lo pelo nome em uma api, mas foi encontrado pelo nome em outra. 
+        e como o pokedex number é global, pode-se refazer a pesquisa utilizando este dado, evitando problemas de informações não encontradas sobre pokemons existentes.
+        '''
         try:
 
             response = requests.get(self.UrlPoke+str(pokedexNumber))
@@ -345,7 +405,11 @@ class PokeInfoRequests():
         except requests.exceptions.RequestException as e:
             messagebox.showerror("Erro", f"Não foi possível carregar os dados do Pokémon: {e}")
     def DoRequestViaTCG(self):
-       
+        '''
+        Atua quando o nome não é encontrado na API padrão e pelo pokemon TCG, apesar das informações não serem iguais, o pokedex number, ainda é global e pode ser utilizado
+        visto que mesmo em pesquisas mal sucedidas pelo nome, o pokedex number ainda resulta em uma pesquisa valida.
+
+        '''
         try:
             
 
@@ -365,7 +429,14 @@ class PokeInfoRequests():
         except:
             return 1
     def DoRequestPokeForms(self):
+        '''
+        Pesquisa formas alternativas de pokemons, MEGA, GIGANTAMAX, DYNAMAX, etc.
+        
+        Essa pesquisa PRECISA ser feita pelo pokedex number.
+        (Pelos testes feitos, apenas pokemons até a terceira geração possuem a pesquisa por nome funcional.)
 
+
+        '''
         Pokedexnumber = self.DoRequestViaTCG()
         print("Requesting pokeform")
         try:        
@@ -383,7 +454,9 @@ class PokeInfoRequests():
             return None
 class GetPokeInfo(tk.Frame): # 5 referencias (possivelmente não necessárias)
 
-    
+    '''
+    Função que controla o conteúdo da janela principal do aplicativo
+    '''
     def __init__(self, parent,poke_view_instance):
         super().__init__(parent)
         self.parent = parent
@@ -396,7 +469,10 @@ class GetPokeInfo(tk.Frame): # 5 referencias (possivelmente não necessárias)
         self.FramePokeinfo.pack()
         
    
-    def GetPokeAbilities(self,Name): # OK!!
+    def GetPokeAbilities(self,Name): 
+        '''
+        Escreve as formas habilidades na lista'
+        '''
         self.Pokename = Name
         Poke_Abilities = []
         response = PokeInfoRequests(Name).DoRequest()  
@@ -408,15 +484,21 @@ class GetPokeInfo(tk.Frame): # 5 referencias (possivelmente não necessárias)
         return Poke_Abilities
 
 
-    # Valores de exemplo
+
     
     def GetPokeAlternativeForms(self, Listbox):
+        '''
+        Escreve as formas alternativas na lista'
+        '''
         alternative_forms = PokeInfoRequests(self.Pokename).DoRequestPokeForms()
         for i in alternative_forms:           
             Listbox.insert(END, i['pokemon']['name'])
         Listbox.delete(0)
         Listbox.bind("<<ListboxSelect>>", self.SelectAlternativeForm)
     def SelectAlternativeFormOnDuals(self,event,poke2):
+        '''
+        Gatilho quando o usuario clica em alguma forma alternativa. No modo de duplas.
+        '''
         selected_index = event.widget.curselection()
         if selected_index:
             selected_item = event.widget.get(selected_index[0])
@@ -424,7 +506,9 @@ class GetPokeInfo(tk.Frame): # 5 referencias (possivelmente não necessárias)
             self.poke_view_instance.atualizar_dados_Duals(selected_item,poke2)
 
     def SelectAlternativeForm(self, event):
-        # Obtém o nome selecionado no Listbox
+        '''
+        Gatilho quando o usuario clica em alguma forma alternativa. No modo único.
+        '''
         selected_index = event.widget.curselection()
         if selected_index:
             selected_item = event.widget.get(selected_index[0])
@@ -432,6 +516,10 @@ class GetPokeInfo(tk.Frame): # 5 referencias (possivelmente não necessárias)
             self.poke_view_instance.atualizar_dados(selected_item)
 
     def CreateDualsGroup(self,PokeName1,PokeName2,parent):
+
+        '''
+        Função que controla a exibição ao executar a pesquisa por DUPLAS, que exibe os dois pokemons selecionados e que exibe as interações compartilhadas
+        '''
         for widget in parent.winfo_children():
             widget.destroy()
         def SwitchOn(PokeInField,Pokename):
@@ -457,7 +545,9 @@ class GetPokeInfo(tk.Frame): # 5 referencias (possivelmente não necessárias)
         PokeInField2.pack()
         FillDualsInteractions(parent,Pokename1,Pokename2)
     def CreateDualsPanel(self, parent,pokemon_name,Poke2):
-        
+        '''
+        Função que cria o painel, onde os icones do pokemon e grades de habilidades e formas alternativas serão exibidas na pesquisa de duplas
+        '''
         panel = tk.Frame(parent, bg="#2E2E2E")
         frame_image = tk.Frame(panel, bg="#2E2E2E")
         frame_image.grid(row=0, column=0, padx=10, sticky="w")
@@ -519,6 +609,9 @@ class GetPokeInfo(tk.Frame): # 5 referencias (possivelmente não necessárias)
 
         return panel,SwitchInButton
     def create_pokemon_panel(self, pokemon_name,func=None):
+        '''
+        Função que cria o painel, onde os icones do pokemon e grades de habilidades e formas alternativas serão exibidas
+        '''
         panel = tk.Frame(self.parent, bg="#2E2E2E")
         frame_image = tk.Frame(panel, bg="#2E2E2E")
         frame_image.grid(row=0, column=0, padx=10, pady=10, sticky="w")
@@ -590,9 +683,11 @@ class GetPokeInfo(tk.Frame): # 5 referencias (possivelmente não necessárias)
 
         return panel
 
-
-
     def get_ability_descriptions(self, pokemon_name):
+        '''
+        Função que obtem a habilidade de cada pokemon, essa informação na API, nem sempre está disponível e o idioma mais completo é o ingles, que é o utilizado de maneira final.
+        '''
+
         descriptions = []
         url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name}/"
         response = requests.get(url)
@@ -607,7 +702,6 @@ class GetPokeInfo(tk.Frame): # 5 referencias (possivelmente não necessárias)
                     ability_data = ability_response.json()
                     effect_entries = ability_data['effect_entries']
 
-                    # Filtrar pelo idioma português
                     description_pt = next(
                         (entry['short_effect'] for entry in effect_entries if entry['language']['name'] == 'en'),
                         None
@@ -623,6 +717,9 @@ class GetPokeInfo(tk.Frame): # 5 referencias (possivelmente não necessárias)
         return descriptions 
 
 def FillDualsInteractions(parent,Poke1,Poke2):
+        '''
+        Função que obtem as interações, adiciona o icone e multiplicador das duplas à variaveis
+        '''        
         TextIconsWeakness = []
         TextIconsImunities = []
         TextIconsResistences = []
@@ -658,7 +755,12 @@ def FillDualsInteractions(parent,Poke1,Poke2):
         if(len(Weakness)==0):
             Weakness = ["none 0x"]
         
+      
         for tipo in Weakness:
+            '''
+            O loop consistem em adicionar o caminho da imagem que será lida futuramente, e precisa ser dinamico visto que o caminho do executável muda com frequência
+            (de computador pra computador)
+            '''            
             if getattr(sys, 'frozen', False):
                 # Estamos rodando a partir de um executável
                 caminho_icone = os.path.join(sys._MEIPASS, 'icons', f"{tipo.split(' ')[0]}.png")
@@ -687,15 +789,7 @@ def FillDualsInteractions(parent,Poke1,Poke2):
                 # Estamos rodando no ambiente de desenvolvimento
                 caminho_icone = os.path.join('icons', f"{tipo.split(' ')[0]}.png")
             TextIconsResistences.append((caminho_icone, ""))
-
-
         damageMultiplierText = []
-
-
-
-
-
-
         for tipo in Weakness:
             if len(tipo.split(" ")) == 3:
                damageMultiplierText.append("4x")
@@ -728,7 +822,9 @@ def FillDualsInteractions(parent,Poke1,Poke2):
 
 
 def FillPokeInteractions(parent,pokename):
-        
+        '''
+        Função que obtem as interações, adiciona o icone e multiplicador de dano de cada uma a uma variávle distinta
+        '''     
         TextIconsWeakness = []
         TextIconsImunities = []
         TextIconsResistences = []
@@ -763,7 +859,10 @@ def FillPokeInteractions(parent,pokename):
 
         for tipo in Imunities:
             if getattr(sys, 'frozen', False):
-                # Estamos rodando a partir de um executável
+                '''
+                O loop consistem em adicionar o caminho da imagem que será lida futuramente, e precisa ser dinamico visto que o caminho do executável muda com frequência
+                (de computador pra computador)
+                '''                   
                 caminho_icone = os.path.join(sys._MEIPASS, 'icons', f"{tipo.split(' ')[0]}.png")
                 ImunitiesMultipyers.append("0X")
             else:
@@ -773,6 +872,10 @@ def FillPokeInteractions(parent,pokename):
             TextIconsImunities.append((caminho_icone, ""))
         
         for tipo in Resistences:
+            '''
+            O loop consistem em adicionar o caminho da imagem que será lida futuramente, e precisa ser dinamico visto que o caminho do executável muda com frequência
+            (de computador pra computador)
+            '''               
             if getattr(sys, 'frozen', False):
                 # Estamos rodando a partir de um executável
                 caminho_icone = os.path.join(sys._MEIPASS, 'icons', f"{tipo.split(' ')[0]}.png")
@@ -783,11 +886,6 @@ def FillPokeInteractions(parent,pokename):
 
 
         damageMultiplierText = []
-
-
-
-
-
 
         for tipo in Weakness:
             if len(tipo.split(" ")) == 3:
@@ -820,6 +918,9 @@ def FillPokeInteractions(parent,pokename):
         tipo_widget3.pack()
 
 class PokeView:
+    '''
+    É a janela que contem a barra de comando, e os paineis de interação, além de gerenciar a barra lateral*(sidebar).
+    '''
     def __init__(self, root,pokename,pokename2=None,SideBar=None):
 
         self.root = root
@@ -836,6 +937,9 @@ class PokeView:
         panel.pack()
 
     def ShowPokeStatsSingles(self,pokename=None):
+        '''
+        Exibe os stats do pokemon selecionado na sidebar
+        '''
         if pokename ==None:
             pokename = self.pokename1
         
@@ -850,6 +954,10 @@ class PokeView:
         elif state == "normal":
             self.SidebarInst.withdraw()
     def SearchPokeStats(self,name):
+        '''
+        Busca os stats do pokemon. A fórmula é a utilizada pelos jogos pokemon. considerando nivel 100
+        Ainda sub-utilizada, novas funcionalidades poderiam ser criadas a partir desta função.
+        '''
         Data = PokeInfoRequests(name).DoRequest()
   
         ArrayVals = []
@@ -897,6 +1005,9 @@ class PokeView:
         return BaseStats,MaxStats
 
     def create_singles_bars(self,val):
+        '''
+        Cria as barras gráficas, explicitado "SINGLES", mas é a unica função do tipo, visto que foi removido da função duplas por motivos de espaço.
+        '''
         parent = self.sideBar()
         values = [v for v in val.values() if isinstance(v, (int, float))]
            
@@ -936,17 +1047,24 @@ class PokeView:
             canvas.create_text(x1 + 50, (y0 + y1) / 2, text=label, font=("Arial", 10), anchor="w",fill="white")
         return parent
     def Fill(self):
+        '''
+        Adiciona na janela explicitada no construtor o painel de interações
+        '''
         FillPokeInteractions(self.root,self.pokename1)
 
     def FillDuals(self,parent):
-    
-
+        '''
+        Adiciona na janela explicitada no construtor o painel de interações das duplas
+        '''
         for widget in parent.winfo_children():
-            widget.destroy()  # deleting widget
+            widget.destroy() 
         GetPokeInfo(self.root,self).CreateDualsGroup(self.pokename1,self.pokename2,parent)
     def atualizar_dados_Duals(self,pokename1,pokename2):
+        '''
+        Atualiza as informações ao trocar um dos pokemons, clicando no botão SWITCH
+        '''
         for widget in self.root.winfo_children():
-            widget.destroy()  # deleting widget
+            widget.destroy() 
 
         self.Pokemon_image = GetPokeInfo(self.root,self) 
         panel = self.Pokemon_image.CreateDualsGroup(pokename1,pokename2,self.root)
@@ -956,10 +1074,13 @@ class PokeView:
 
     def atualizar_dados(self, pokename = "zacian-crowned"):
         
+        '''
+        Ao mudar de forma as informações muda, ou seja, tudo precisa ser refeito. A função apaga todas as informações e basicamente as refaz com base no novo nome do pokemon.
+        '''
         for widget in self.root.winfo_children():
-            widget.destroy()  # deleting widget
+            widget.destroy() 
 
-        self.Pokemon_image = GetPokeInfo(self.root,self)  # Instância única de GetPokeInfo
+        self.Pokemon_image = GetPokeInfo(self.root,self) 
         panel = self.Pokemon_image.create_pokemon_panel(pokename,func=lambda:self.ShowPokeStatsSingles(pokename))
         panel.pack()
         FillPokeInteractions(self.root,pokename)
@@ -968,6 +1089,12 @@ class PokeView:
 
 
 def SimpleTypeSelection(parent,Tipo1,Tipo2=None):
+
+    '''
+    Seleçao de tipo, onde o usuario escolhe 1 ou 2 tipos distintos e obtem as relaões
+    Claramente pode ser feito de forma mais eficiente no entanto para fornecer avisos mais precisos ao usuário sobre o que está errado foi optado por manter.
+    '''
+
 
     if(Tipo1 == Tipo2):
         Tipo2 = None
@@ -1066,32 +1193,32 @@ def SimpleTypeSelection(parent,Tipo1,Tipo2=None):
 # ----------------------------------------------------------------------------------------------------------------------------------
 
 class IconCombobox:
+    '''
+    Combobox com imagens, que exibe os icones de cada tipo.
+    '''
     def __init__(self, parent, values, icons, default_value):
         self.parent = parent
         self.values = values
         self.icons = icons
 
-        # Frame para conter o dropdown
         self.frame = tk.Frame(self.parent)
-        
-        # Botão para exibir a seleção
+
         self.selected_value = tk.StringVar(value=default_value)
         self.dropdown_button = tk.Menubutton(
             self.frame, textvariable=self.selected_value, relief="raised", width=15
         )
         self.dropdown_button.pack(fill="x")
 
-        # Menu que mostra os valores com ícones
         self.menu = tk.Menu(self.dropdown_button, tearoff=0)
         self.dropdown_button["menu"] = self.menu
 
-        # Lista para armazenar as referências das imagens
+
         self.images = []
 
         for value, icon_path in zip(self.values, self.icons):
             image = Image.open(icon_path).resize((30, 30))
             icon = ImageTk.PhotoImage(image)
-            self.images.append(icon)  # Armazena as imagens para evitar o garbage collector
+            self.images.append(icon)  
             self.menu.add_command(
                 label=value, image=icon, compound="left", command=lambda v=value: self.set_value(v)
             )
@@ -1104,6 +1231,19 @@ class IconCombobox:
         self.frame.pack(**kwargs)
 
 class SearchBox(tk.Frame):
+    '''
+    Pagina de pesquisa, onde o usuario insere o nome do pokemon e tem as sugestões de nome a medida que escreve.
+    
+
+    TODOS OS POKEMONS ESTÃO ARMAZENADOS EM UMA VARIAVEL
+
+    É uma das partes que mais precisa de melhorias do código, foi feito desta maneira para facilitar a verificação, se de fato todos os pokemons estão ai, e se estão escritos
+    de maneira correta.
+    
+    
+        
+    '''
+
     def __init__(self, root,RenomearAba=None,*args, **kwargs):
         super().__init__(root, *args, **kwargs)
         self.root = root
@@ -1111,7 +1251,10 @@ class SearchBox(tk.Frame):
         self.lista_pokemon = ["Bulbasaur","Ivysaur","Venusaur","Charmander","Charmeleon","Charizard","Squirtle","Wartortle","Blastoise","Caterpie","Metapod","Butterfree","Weedle","Kakuna","Beedrill","Pidgey","Pidgeotto","Pidgeot","Rattata","Raticate","Spearow","Fearow","Ekans","Arbok","Pikachu","Raichu","Sandshrew","Sandslash","Nidoran♀","Nidorina","Nidoqueen","Nidoran♂","Nidorino","Nidoking","Clefairy","Clefable","Vulpix","Ninetales","Jigglypuff","Wigglytuff","Zubat","Golbat","Oddish","Gloom","Vileplume","Paras","Parasect","Venonat","Venomoth","Diglett","Dugtrio","Meowth","Persian","Psyduck","Golduck","Mankey","Primeape","Growlithe","Arcanine","Poliwag","Poliwhirl","Poliwrath","Abra","Kadabra","Alakazam","Machop","Machoke","Machamp","Bellsprout","Weepinbell","Victreebel","Tentacool","Tentacruel","Geodude","Graveler","Golem","Ponyta","Rapidash","Slowpoke","Slowbro","Magnemite","Magneton","Farfetch'd","Doduo","Dodrio","Seel","Dewgong","Grimer","Muk","Shellder","Cloyster","Gastly","Haunter","Gengar","Onix","Drowzee","Hypno","Krabby","Kingler","Voltorb","Electrode","Exeggcute","Exeggutor","Cubone","Marowak","Hitmonlee","Hitmonchan","Lickitung","Koffing","Weezing","Rhyhorn","Rhydon","Chansey","Tangela","Kangaskhan","Horsea","Seadra","Goldeen","Seaking","Staryu","Starmie","Mr-Mime","Scyther","Jynx","Electabuzz","Magmar","Pinsir","Tauros","Magikarp","Gyarados","Lapras","Ditto","Eevee","Vaporeon","Jolteon","Flareon","Porygon","Omanyte","Omastar","Kabuto","Kabutops","Aerodactyl","Snorlax","Articuno","Zapdos","Moltres","Dratini","Dragonair","Dragonite","Mewtwo","Mew","Chikorita","Bayleef","Meganium","Cyndaquil","Quilava","Typhlosion","Totodile","Croconaw","Feraligatr","Sentret","Furret","Hoothoot","Noctowl","Ledyba","Ledian","Spinarak","Ariados","Crobat","Chinchou","Lanturn","Pichu","Cleffa","Igglybuff","Togepi","Togetic","Natu","Xatu","Mareep","Flaaffy","Ampharos","Bellossom","Marill","Azumarill","Sudowoodo","Politoed","Hoppip","Skiploom","Jumpluff","Aipom","Sunkern","Sunflora","Yanma","Wooper","Quagsire","Espeon","Umbreon","Murkrow","Slowking","Misdreavus","Unown","Wobbuffet","Girafarig","Pineco","Forretress","Dunsparce","Gligar","Steelix","Snubbull","Granbull","Qwilfish","Scizor","Shuckle","Heracross","Sneasel","Teddiursa","Ursaring","Slugma","Magcargo","Swinub","Piloswine","Corsola","Remoraid","Octillery","Delibird","Mantine","Skarmory","Houndour","Houndoom","Kingdra","Phanpy","Donphan","Porygon2","Stantler","Smeargle","Tyrogue","Hitmontop","Smoochum","Elekid","Magby","Miltank","Blissey","Raikou","Entei","Suicune","Larvitar","Pupitar","Tyranitar","Lugia","Ho-Oh","Celebi","Treecko","Grovyle","Sceptile","Torchic","Combusken","Blaziken","Mudkip","Marshtomp","Swampert","Poochyena","Mightyena","Zigzagoon","Linoone","Wurmple","Silcoon","Beautifly","Cascoon","Dustox","Lotad","Lombre","Ludicolo","Seedot","Nuzleaf","Shiftry","Taillow","Swellow","Wingull","Pelipper","Ralts","Kirlia","Gardevoir","Surskit","Masquerain","Shroomish","Breloom","Slakoth","Vigoroth","Slaking","Nincada","Ninjask","Shedinja","Whismur","Loudred","Exploud","Makuhita","Hariyama","Azurill","Nosepass","Skitty","Delcatty","Sableye","Mawile","Aron","Lairon","Aggron","Meditite","Medicham","Electrike","Manectric","Plusle","Minun","Volbeat","Illumise","Roselia","Gulpin","Swalot","Carvanha","Sharpedo","Wailmer","Wailord","Numel","Camerupt","Torkoal","Spoink","Grumpig","Spinda","Trapinch","Vibrava","Flygon","Cacnea","Cacturne","Swablu","Altaria","Zangoose","Seviper","Lunatone","Solrock","Barboach","Whiscash","Corphish","Crawdaunt","Baltoy","Claydol","Lileep","Cradily","Anorith","Armaldo","Feebas","Milotic","Castform","Kecleon","Shuppet","Banette","Duskull","Dusclops","Tropius","Chimecho","Absol","Wynaut","Snorunt","Glalie","Spheal","Sealeo","Walrein","Clamperl","Huntail","Gorebyss","Relicanth","Luvdisc","Bagon","Shelgon","Salamence","Beldum","Metang","Metagross","Regirock","Regice","Registeel","Latias","Latios","Kyogre","Groudon","Rayquaza","Jirachi","Deoxys","Turtwig","Grotle","Torterra","Chimchar","Monferno","Infernape","Piplup","Prinplup","Empoleon","Starly","Staravia","Staraptor","Bidoof","Bibarel","Kricketot","Kricketune","Shinx","Luxio","Luxray","Budew","Roserade","Cranidos","Rampardos","Shieldon","Bastiodon","Burmy","Wormadam","Mothim","Combee","Vespiquen","Pachirisu","Buizel","Floatzel","Cherubi","Cherrim","Shellos","Gastrodon","Ambipom","Drifloon","Drifblim","Buneary","Lopunny","Mismagius","Honchkrow","Glameow","Purugly","Chingling","Stunky","Skuntank","Bronzor","Bronzong","Bonsly","Mime-Jr","Happiny","Chatot","Spiritomb","Gible","Gabite","Garchomp","Munchlax","Riolu","Lucario","Hippopotas","Hippowdon","Skorupi","Drapion","Croagunk","Toxicroak","Carnivine","Finneon","Lumineon","Mantyke","Snover","Abomasnow","Weavile","Magnezone","Lickilicky","Rhyperior","Tangrowth","Electivire","Magmortar","Togekiss","Yanmega","Leafeon","Glaceon","Gliscor","Mamoswine","Porygon-Z","Gallade","Probopass","Dusknoir","Froslass","Rotom","Uxie","Mesprit","Azelf","Dialga","Palkia","Heatran","Regigigas","Giratina","Cresselia","Phione","Manaphy","Darkrai","Shaymin","Arceus","Victini","Snivy","Servine","Serperior","Tepig","Pignite","Emboar","Oshawott","Dewott","Samurott","Patrat","Watchog","Lillipup","Herdier","Stoutland","Purrloin","Liepard","Pansage","Simisage","Pansear","Simisear","Panpour","Simipour","Munna","Musharna","Pidove","Tranquill","Unfezant","Blitzle","Zebstrika","Roggenrola","Boldore","Gigalith","Woobat","Swoobat","Drilbur","Excadrill","Audino","Timburr","Gurdurr","Conkeldurr","Tympole","Palpitoad","Seismitoad","Throh","Sawk","Sewaddle","Swadloon","Leavanny","Venipede","Whirlipede","Scolipede","Cottonee","Whimsicott","Petilil","Lilligant","Basculin","Sandile","Krokorok","Krookodile","Darumaka","Darmanitan","Maractus","Dwebble","Crustle","Scraggy","Scrafty","Sigilyph","Yamask","Cofagrigus","Tirtouga","Carracosta","Archen","Archeops","Trubbish","Garbodor","Zorua","Zoroark","Minccino","Cinccino","Gothita","Gothorita","Gothitelle","Solosis","Duosion","Reuniclus","Ducklett","Swanna","Vanillite","Vanillish","Vanilluxe","Deerling","Sawsbuck","Emolga","Karrablast","Escavalier","Foongus","Amoonguss","Frillish","Jellicent","Alomomola","Joltik","Galvantula","Ferroseed","Ferrothorn","Klink","Klang","Klinklang","Tynamo","Eelektrik","Eelektross","Elgyem","Beheeyem","Litwick","Lampent","Chandelure","Axew","Fraxure","Haxorus","Cubchoo","Beartic","Cryogonal","Shelmet","Accelgor","Stunfisk","Mienfoo","Mienshao","Druddigon","Golett","Golurk","Pawniard","Bisharp","Bouffalant","Rufflet","Braviary","Vullaby","Mandibuzz","Heatmor","Durant","Deino","Zweilous","Hydreigon","Larvesta","Volcarona","Cobalion","Terrakion","Virizion","Tornadus","Thundurus","Reshiram","Zekrom","Landorus","Kyurem","Keldeo","Meloetta","Genesect","Chespin","Quilladin","Chesnaught","Fennekin","Braixen","Delphox","Froakie","Frogadier","Greninja","Bunnelby","Diggersby","Fletchling","Fletchinder","Talonflame","Scatterbug","Spewpa","Vivillon","Litleo","Pyroar","Flabébé","Floette","Florges","Skiddo","Gogoat","Pancham","Pangoro","Furfrou","Espurr","Meowstic","Honedge","Doublade","Aegislash","Spritzee","Aromatisse","Swirlix","Slurpuff","Inkay","Malamar","Binacle","Barbaracle","Skrelp","Dragalge","Clauncher","Clawitzer","Helioptile","Heliolisk","Tyrunt","Tyrantrum","Amaura","Aurorus","Sylveon","Hawlucha","Dedenne","Carbink","Goomy","Sliggoo","Goodra","Klefki","Phantump","Trevenant","Pumpkaboo","Gourgeist","Bergmite","Avalugg","Noibat","Noivern","Xerneas","Yveltal","Zygarde","Diancie","Hoopa","Volcanion","Rowlet","Dartrix","Decidueye","Litten","Torracat","Incineroar","Popplio","Brionne","Primarina","Pikipek","Trumbeak","Toucannon","Yungoos","Gumshoos","Grubbin","Charjabug","Vikavolt","Crabrawler","Crabominable","Oricorio","Cutiefly","Ribombee","Rockruff","Lycanroc","Wishiwashi","Mareanie","Toxapex","Mudbray","Mudsdale","Dewpider","Araquanid","Fomantis","Lurantis","Morelull","Shiinotic","Salandit","Salazzle","Stufful","Bewear","Bounsweet","Steenee","Tsareena","Comfey","Oranguru","Passimian","Wimpod","Golisopod","Sandygast","Palossand","Pyukumuku","Type:-Null","Silvally","Minior","Komala","Turtonator","Togedemaru","Mimikyu","Bruxish","Drampa","Dhelmise","Jangmo-o","Hakamo-o","Kommo-o","Tapu-Koko","Tapu-Lele","Tapu-Bulu","Tapu-Fini","Cosmog","Cosmoem","Solgaleo","Lunala","Nihilego","Buzzwole","Pheromosa","Xurkitree","Celesteela","Kartana","Guzzlord","Necrozma","Magearna","Marshadow","Poipole","Naganadel","Stakataka","Blacephalon","Zeraora","Meltan","Melmetal","Grookey","Thwackey","Rillaboom","Scorbunny","Raboot","Cinderace","Sobble","Drizzile","Inteleon","Skwovet","Greedent","Rookidee","Corvisquire","Corviknight","Blipbug","Dottler","Orbeetle","Nickit","Thievul","Gossifleur","Eldegoss","Wooloo","Dubwool","Chewtle","Drednaw","Yamper","Boltund","Rolycoly","Carkol","Coalossal","Applin","Flapple","Appletun","Silicobra","Sandaconda","Cramorant","Arrokuda","Barraskewda","Toxel","Toxtricity","Sizzlipede","Centiskorch","Clobbopus","Grapploct","Sinistea","Polteageist","Hatenna","Hattrem","Hatterene","Impidimp","Morgrem","Grimmsnarl","Obstagoon","Perrserker","Cursola","Sirfetch'd","Mr-Rime","Runerigus","Milcery","Alcremie","Falinks","Pincurchin","Snom","Frosmoth","Stonjourner","Eiscue","Indeedee","Morpeko","Cufant","Copperajah","Dracozolt","Arctozolt","Dracovish","Arctovish","Duraludon","Dreepy","Drakloak","Dragapult","Zacian","Zamazenta","Eternatus","Kubfu","Urshifu","Zarude","Regieleki","Regidrago","Glastrier","Spectrier","Calyrex","Wyrdeer","Kleavor","Ursaluna","Basculegion","Sneasler","Overqwil","Enamorus","Sprigatito","Floragato","Meowscarada","Fuecoco","Crocalor","Skeledirge","Quaxly","Quaxwell","Quaquaval","Lechonk","Oinkologne","Tarountula","Spidops","Nymble","Lokix","Pawmi","Pawmo","Pawmot","Tandemaus","Maushold","Fidough","Dachsbun","Smoliv","Dolliv","Arboliva","Squawkabilly","Nacli","Naclstack","Garganacl","Charcadet","Armarouge","Ceruledge","Tadbulb","Bellibolt","Wattrel","Kilowattrel","Maschiff","Mabosstiff","Shroodle","Grafaiai","Bramblin","Brambleghast","Toedscool","Toedscruel","Klawf","Capsakid","Scovillain","Rellor","Rabsca","Flittle","Espathra","Tinkatink","Tinkatuff","Tinkaton","Wiglett","Wugtrio","Bombirdier","Finizen","Palafin","Varoom","Revavroom","Cyclizar","Orthworm","Glimmet","Glimmora","Greavard","Houndstone","Flamigo","Cetoddle","Cetitan","Veluza","Dondozo","Tatsugiri","Annihilape","Clodsire","Farigiraf","Dudunsparce","Kingambit","Great-Tusk","Scream-Tail","Brute-Bonnet","Flutter-Mane","Slither-Wing","Sandy-Shocks","Iron-Treads","Iron-Bundle","Iron-Hands","Iron-Jugulis","Iron-Moth","Iron-Thorns","Frigibax","Arctibax","Baxcalibur","Gimmighoul","Gholdengo","Wo-Chien","Chien-Pao","Ting-Lu","Chi-Yu","Roaring-Moon","Iron-Valiant","Koraidon","Miraidon","Walking-Wake","Iron-Leaves","Dipplin","Poltchageist","Sinistcha","Okidogi","Munkidori","Fezandipiti","Ogerpon","Archaludon","Hydrapple","Gouging-Fire","Raging-Bolt","Iron-Boulder","Iron-Crown","Terapagos","Pecharunt"]
         self.BarraDeComandos = BarraDeComandos
     def SearchDuals(self,DefaultValue1="",DefaultValue2="",Zerado=False):
-           
+        '''
+            Criação das caixas de pesquisa no modo duplas
+        '''
+       
         self.entrada_pokemon = StringVar()
         self.SearchAndComplete = tk.Frame(self.root, relief="sunken", borderwidth=1)
         self.lista_sugestoes = Listbox(self.SearchAndComplete, bg="#444444",fg="#fff",font=("Arial", 12), width=30, height=10, bd=2,selectmode=tk.SINGLE)
@@ -1150,6 +1293,11 @@ class SearchBox(tk.Frame):
         self.DualsSearch_BTN = tk.Button(self.root,text="SEARCH",command=lambda:PokeView(self.root,self.entry_pokemon.get().lower(),self.entry_pokemon2.get().lower()).FillDuals(self.root))
         self.DualsSearch_BTN.pack()
     def DualsSelectItem(self,Lista,Panel_SearchAndComplete,Entrada):
+       
+        '''
+         Gatilho de seleção, quando o usuário clica em uma opção na lista nas duplas
+        '''
+       
         if not hasattr(self, "_handling_event") or not self._handling_event:
             self._handling_event = True  # Indica que estamos lidando com o evento
 
@@ -1166,6 +1314,10 @@ class SearchBox(tk.Frame):
             self.root.after(100, lambda: setattr(self, "_handling_event", False))
 
     def SearchByTypes(self):
+        '''
+         Criação da busca por tipos.
+            Cria os  menus de tipo dropdown com as imagens respectivas de cada tipo.
+        '''
         self.values2 = self.values1 =  ['Nenhum','Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy']
         self.ValTESTE=  ['Nenhum','Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy']
         self.IconsPath = []
@@ -1246,7 +1398,9 @@ class SearchBox(tk.Frame):
         return BaseStats,MaxStats
 
     def SearchByPokeName(self,rootlistener,Janela_btn,SideBar=None):
-       
+        '''
+            Criação da caixa de pesquisa simples por 1 pokemon
+        '''
         self.sidebar = SideBar
     
         self.inst_pokename = None
@@ -1265,6 +1419,7 @@ class SearchBox(tk.Frame):
         rootlistener.bind("<Return>", lambda x: self.selecionar_item(Janela_btn,SideBar=SideBar))
         
     def UpdateTypeSelection(self):
+
         # Remove labels antigos
         for widget in self.panel_frame.winfo_children():
             widget.destroy()
@@ -1276,6 +1431,9 @@ class SearchBox(tk.Frame):
 
 
     def atualizar_lista(self,entrada_pokemon, entradapokemon,listaSugestoes,*args):
+        '''
+            Atualiza o a caixa de sugestões
+        '''
         valor_digitado = entrada_pokemon.get()
         
         if valor_digitado == '':
@@ -1360,12 +1518,6 @@ class SearchBox(tk.Frame):
                 
                 # Reativar o evento após uma pequena pausa
                 self.root.after(100, lambda: setattr(self, "_handling_event", False))
-
-
-
-
-
-
 
     def carregar_dados_pokemon(self, nome_pokemon):
         self.RenomearAba("Pokemon 1",nome_pokemon)

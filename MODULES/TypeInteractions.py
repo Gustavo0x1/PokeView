@@ -552,6 +552,3 @@ def StrenghtAndWeakness(Type1,Type2):
 
 
         return (Weakness,Imunidades,Resistences)
-
-
-print(DualsTypeInteraction(StrenghtAndWeakness("Electric",None),StrenghtAndWeakness("Grass",None)))
